@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mouse image move test</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        img {
+            position: absolute;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <img id="followImage" src="{{ url_for('static', filename='images/image.png') }}" alt="My Image" width="50" height="50">
+
+    <script>
+        const image = document.getElementById('followImage');
+
+        document.addEventListener('mousemove', function(event) {
+            const mouseX = event.clientX;
+            const mouseY = event.clientY;
+
+            // Move the image to the mouse location
+            image.style.left = `${mouseX}px`;
+            image.style.top = `${mouseY}px`;
+        });
+    </script>
+
+</body>
+</html>
