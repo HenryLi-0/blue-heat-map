@@ -82,16 +82,16 @@ Also, one more thing, let's explain what a divider is! Dividers are just little 
 
 More optimizations! We don't even need to save every axis! So, we now have a structure like this:
 
-- 6 bits: Data divider
+- 5 bits: Data divider
 - 2 bits: The type of data (XYZ or time)
 - n bits: The change
-- Total: 6+2+n bits
+- Total: 5+2+n bits
 
 In this case, we can save a huge amount of data, given the player walks roughly 5.6 m/s! We will take more bits if we need more information, which really saves a lot of data! This means that, the worse case is if a player is moving extremely quickly, which, as far as Minecraft mechanics go, can't be too bad... unless someone's using a super powerful ender pearl cannon or something.
 
 Ok, so now let's do the worst case scenario, a player that starts moving, stops for a second, then repeats. And they have an elytra. Then, let's just assume they go 60 bps in every axis (which doesn't happen, but let's just assume). In this case, one player joins, we write 60 bits of data, then we have a time log, with 8 bits, being `00011000` for `00011` divider `00` time and `0` seconds since log start. Each divider for space would be `01001`, since the following block data would be 9 bits long. Then, every second includes 3x 15 bits ($6+2+7$).
 
-Therefore, $65+45n$ means, for our cursed server, we would have approximatly ~1MB of data every ~31 minutes, or ~46.3 MB a day! And that's with 100 players online actively with one of the worse case scenarios (aka, this is super compact!)! 
+Therefore, $65+5+45n$ means, for our cursed server, we would have approximatly ~1MB of data every ~31 minutes, or ~46.3 MB a day! And that's with 100 players online actively with one of the worse case scenarios (aka, this is super compact!)! 
 
 An issue though, we currently have compacted our data so much that a single bit flip to anything would absolutely destroy our setup, either by corrupting a delta, changing all following positions, or by changing a divider, which corrupts all data after it. To fix these issues, we can insert an 8 bit `00000000` after a log block every minute (or long period of inactivity). Additionally, we can create a new session every hour, just to make organizing easier, while also allowing us to correct for small errors and possible data corruptions! In the event that the 8 bit safety log is corrupted, we can always fast forward to the next log block, or, if necessary, the next session. It's likely that the operating system would correct for these errors, but just as a fail safe, and for potentially faster data recall!
 
