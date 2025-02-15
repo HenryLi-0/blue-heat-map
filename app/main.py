@@ -1,20 +1,14 @@
 from flask import Flask, render_template
 from threading import Thread
-
-
-BACKEND = True
-FRONTEND = True
-
+from settings import *
+import requests
 
 '''MINECRAFT PROCESSING STUFF'''
 if BACKEND:
     def listener():
-        while True:
-            pass
-
+        pass
     thread = Thread(target=listener)
     thread.start()
-
 
 '''FLASK STUFF'''
 
