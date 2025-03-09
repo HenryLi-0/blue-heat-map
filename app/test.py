@@ -1,8 +1,10 @@
-from backend import Network
+from backend import *
 
 
-network = Network()
-network.tick()
-print(Network.reponse)
-print(Network.status)
-print(Network.data)
+# network = Network()
+# network.tick()
+# print(Network.reponse)
+# print(Network.status)
+# print(Network.data)
+
+log = LogReader("test.py")
