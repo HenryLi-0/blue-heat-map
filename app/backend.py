@@ -1,5 +1,5 @@
 from settings import *
-import requests, os, time
+import requests, os, time,math
 
 class BackEnd:
     def __init__(self):
@@ -19,47 +19,77 @@ class Network:
     response = ""
     status = 200
     data = {}
-    def __init__(self):
-        pass
-    def tick(self):
+    @staticmethod
+    def tick():
         try:
-            Network.reponse = requests.get(PLAYERS_JSON)
-            Network.status = Network.reponse.status_code
-            Network.data = Network.reponse.json()
+            Network.response = requests.get(PLAYERS_JSON)
+            Network.status = Network.response.status_code
+            Network.data = Network.response.json()
         except:
             Network.data = {}
 
+class LogWritingUtils:
+    @staticmethod
+    def toBinary(baseTen, forceMinSize = False):
+        return bin(baseTen)[2:].rjust(forceMinSize, "0") if forceMinSize else bin(baseTen)[2:]
+    @staticmethod
+    def packWithHeader(data):
+        return LogWritingUtils.toBinary(len(data), 5) + data
+    @staticmethod
+    def packStartingBlock(x, y, z):
+        return "00000" + str((abs(x) == x) + 0) + LogWritingUtils.toBinary(abs(x), 23) + str((abs(y) == y) + 0) + LogWritingUtils.toBinary(abs(y), 7) + str((abs(z) == z) + 0) + LogWritingUtils.toBinary(abs(z), 23)
+    @staticmethod
+    def packLog(t, x, y, z, forceT = False):
+        concat = ""
+        if t != 1 or forceT:
+            concat += LogWritingUtils.packWithHeader("00" + LogWritingUtils.toBinary(data))
+        for index, data in enumerate([x, y, z]):
+            concat += LogWritingUtils.packWithHeader(LogWritingUtils.toBinary(index + 1, 2) + str((abs(data) == data) + 0) + LogWritingUtils.toBinary(abs(data)))
+        return concat
+    @staticmethod
+    def packSafety():
+        return "00000000"
+
+    
 class LogWriter:
     def __init__(self, playerUUID:str):
-        self.initLog = time.time()
+        self.initLogTime = time.time()
         self.playerUUID = playerUUID
-        self.queue = []
-        self.lastLog = time.time()
-        self.delay = self.lastLog - self.initLog
-        self.latestData = None
         self.dataIndex = None
 
+        self.lastLogTime = time.time()
+        self.lastLog = {}
+        self.delay = self.lastLogTime - self.initLogTime
+
+        self.latestData = None
+        self.queue = []
+        self.scanID()
+
         # init block
-        Network.tick()
         
+        
+        # self.latestData
+    
+    def scanID(self):
         for i, group in enumerate(Network.data["players"]):
             if group["uuid"] == self.playerUUID:
                 self.latestData = group
-                self.dataIndex = i    
+                self.dataIndex = i
                 break
         if self.dataIndex == None:
             print("IndexError: No UUID {} found in Network data!".format(self.playerUUID))
-        
-        # self.latestData
 
-        
     def log(self):
         '''Logs the file if more time since the last update has passed than the frequency. Meant to be called repeatedly.'''
-        if (time.time()-self.lastLog) > FREQUENCY:
-            
+        if (time.time()-self.lastLogTime) > FREQUENCY:
+            if not Network.data["players"][self.dataIndex]["uuid"] == self.playerUUID:
+                print("Player UUID index update detected! Updating...")
+                self.scanID()
+            if Network.data["players"][self.dataIndex]["uuid"] == self.playerUUID:
+                self.lastLog = Network.data["players"][self.dataIndex]
 
-            self.lastLog += FREQUENCY
-            self.delay = time.time()-self.lastLog
+            self.lastLogTime += FREQUENCY
+            self.delay = time.time()-self.lastLogTime
     def getLastLogDelayMS(self):
         '''Returns the delay in the last log in milliseconds (1/1000 seconds).'''
         return round(self.delay*1000)

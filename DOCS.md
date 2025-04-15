@@ -95,6 +95,8 @@ Therefore, $65+5+45n$ means, for our cursed server, we would have approximatly ~
 
 An issue though, we currently have compacted our data so much that a single bit flip to anything would absolutely destroy our setup, either by corrupting a delta, changing all following positions, or by changing a divider, which corrupts all data after it. To fix these issues, we can insert an 8 bit `00000000` after a log block every minute (or long period of inactivity). Additionally, we can create a new session every hour, just to make organizing easier, while also allowing us to correct for small errors and possible data corruptions! In the event that the 8 bit safety log is corrupted, we can always fast forward to the next log block, or, if necessary, the next session. It's likely that the operating system would correct for these errors, but just as a fail safe, and for potentially faster data recall!
 
+Additionally, the first block is 56 bits, meaning that it'll have a 6 bit divider. Since we don't let ourselves do it, it's divider will be a special `00000`!
+
 Ok, that's great and all, but let's put this into practice. Each `.dat` file will consist of a session of logs.
 
 Let's see an example!
@@ -103,7 +105,7 @@ Let's see an example!
 # UUID/time.dat
 
 # starting block
-11000 # divider
+00000 # divider
 0 000 0000 0000 0000 0000 0000 # x
 0 000 0000 # y
 0 000 0000 0000 0000 0000 0000 # z
@@ -111,19 +113,19 @@ Let's see an example!
 # log (10 seconds after start) (move 1 block XYZ)
 00110 # divider
 00 1010 # time
-00101 # divider
+00100 # divider
 01 0 1 # x
-00101 # divider
+00100 # divider
 10 0 1 # y
-00101 # divider
+00100 # divider
 11 0 1 # z
 
 # log (after 1 second) (move back, -1 block XYZ)
-00101 # divider
+00100 # divider
 01 1 1 # x
-00101 # divider
+00100 # divider
 10 1 1 # y
-00101 # divider
+00100 # divider
 11 1 1 # z
 
 # after every minute

@@ -5,15 +5,23 @@ import requests
 
 '''MINECRAFT PROCESSING STUFF'''
 if BACKEND:
-    def listener():
+    def backendThread():
         pass
-    thread = Thread(target=listener)
+    thread = Thread(target=backendThread)
     thread.start()
 
 '''FLASK STUFF'''
 
 if FRONTEND:
     app = Flask(__name__)
+
+    '''
+    TO DO:
+    - main site (reports service/storage/etc. status and links to other bits)
+    - log reading site (reads logs)
+    - data analysis site (basically log reader except for data analysis, might change)
+    - live dashboard
+    '''
 
     @app.route('/')
     def test():
