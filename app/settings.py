@@ -6,6 +6,6 @@ PLAYERS_JSON = "https://mc.hackclub.com" + "/maps/world/live/players.json"
 FREQUENCY = 1
 
 # Whether or not to process players and server info
-BACKEND = True 
+BACKEND = False 
 # Whether or not to run the web setup
 FRONTEND = True 

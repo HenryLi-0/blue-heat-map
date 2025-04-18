@@ -2,9 +2,11 @@ from flask import Flask, render_template
 from threading import Thread
 from settings import *
 import requests
+from backend import *
 
 '''MINECRAFT PROCESSING STUFF'''
 if BACKEND:
+    Network.tick()
     def backendThread():
         pass
     thread = Thread(target=backendThread)

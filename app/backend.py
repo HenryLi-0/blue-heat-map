@@ -28,27 +28,31 @@ class Network:
         except:
             Network.data = {}
 
-class LogWritingUtils:
+class DataLog:
     @staticmethod
     def toBinary(baseTen, forceMinSize = False):
         return bin(baseTen)[2:].rjust(forceMinSize, "0") if forceMinSize else bin(baseTen)[2:]
-    @staticmethod
-    def packWithHeader(data):
-        return LogWritingUtils.toBinary(len(data), 5) + data
-    @staticmethod
-    def packStartingBlock(x, y, z):
-        return "00000" + str((abs(x) == x) + 0) + LogWritingUtils.toBinary(abs(x), 23) + str((abs(y) == y) + 0) + LogWritingUtils.toBinary(abs(y), 7) + str((abs(z) == z) + 0) + LogWritingUtils.toBinary(abs(z), 23)
-    @staticmethod
-    def packLog(t, x, y, z, forceT = False):
+
+    def __init__(self):
+        self.dataLog = []
+
+    def packWithHeader(self, data):
+        self.dataLog.append(DataLog.toBinary(len(data), 5) + data)
+    def packStartingBlock(self, x, y, z):
+        self.dataLog.append("00000" + str((abs(x) == x) + 0) + DataLog.toBinary(abs(x), 23) + str((abs(y) == y) + 0) + DataLog.toBinary(abs(y), 7) + str((abs(z) == z) + 0) + DataLog.toBinary(abs(z), 23))
+    def packLog(self, t, x, y, z, forceT = False):
         concat = ""
         if t != 1 or forceT:
-            concat += LogWritingUtils.packWithHeader("00" + LogWritingUtils.toBinary(data))
+            concat += DataLog.packWithHeader("00" + DataLog.toBinary(data))
         for index, data in enumerate([x, y, z]):
-            concat += LogWritingUtils.packWithHeader(LogWritingUtils.toBinary(index + 1, 2) + str((abs(data) == data) + 0) + LogWritingUtils.toBinary(abs(data)))
-        return concat
-    @staticmethod
-    def packSafety():
-        return "00000000"
+            concat += DataLog.packWithHeader(DataLog.toBinary(index + 1, 2) + str((abs(data) == data) + 0) + DataLog.toBinary(abs(data)))
+        self.dataLog.append(concat)
+    def packSafety(self):
+        self.dataLog.append("00000000")
+
+    def save(self):
+        # TODO: compress to file
+        pass
 
     
 class LogWriter:
@@ -58,15 +62,24 @@ class LogWriter:
         self.dataIndex = None
 
         self.lastLogTime = time.time()
-        self.lastLog = {}
         self.delay = self.lastLogTime - self.initLogTime
 
         self.latestData = None
-        self.queue = []
+        self.lastData = self.latestData
+        self.dataLog = DataLog()
         self.scanID()
 
+        '''
+        log = log into data logs
+        data = data from network
+        '''
+
         # init block
-        
+        self.dataLog.packStartingBlock(
+            round(self.latestData["position"]["x"]),
+            round(self.latestData["position"]["y"]),
+            round(self.latestData["position"]["z"])
+        )
         
         # self.latestData
     
@@ -78,6 +91,7 @@ class LogWriter:
                 break
         if self.dataIndex == None:
             print("IndexError: No UUID {} found in Network data!".format(self.playerUUID))
+            # TODO: implement automatic log closing
 
     def log(self):
         '''Logs the file if more time since the last update has passed than the frequency. Meant to be called repeatedly.'''
@@ -86,7 +100,7 @@ class LogWriter:
                 print("Player UUID index update detected! Updating...")
                 self.scanID()
             if Network.data["players"][self.dataIndex]["uuid"] == self.playerUUID:
-                self.lastLog = Network.data["players"][self.dataIndex]
+                self.latestData = Network.data["players"][self.dataIndex]
 
             self.lastLogTime += FREQUENCY
             self.delay = time.time()-self.lastLogTime
