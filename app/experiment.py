@@ -12,24 +12,25 @@ for ie in range(10):
 
     c.execute('''
     CREATE TABLE IF NOT EXISTS player_activity (
-        timestamp TEXT NOT NULL,
+        timestamp SMALLINT NOT NULL,
         x INTEGER NOT NULL,
-        y INTEGER NOT NULL,
+        y SMALLINT NOT NULL,
         z INTEGER NOT NULL,
+        f BOOLEAN NOT NULL,
         PRIMARY KEY (timestamp)
     );
     ''')
 
-    def log(time, x, y, z):
+    def log(time, x, y, z, f):
         c.execute('''
-        INSERT INTO player_activity (timestamp, x, y, z)
-        VALUES (?, ?, ?, ?)
-        ''', (time, x, y, z))
+        INSERT INTO player_activity (timestamp, x, y, z, f)
+        VALUES (?, ?, ?, ?, ?)
+        ''', (time, x, y, z, f))
 
-    r = lambda: str(random.randint(0,1000000))
+    r = lambda: random.randint(0,1000000)
 
     for i in range(60*60):
-        log(i, r(), r(), r())
+        log(i, random.randint(-1000000,1000000), random.randint(-1024,1024), random.randint(-1000000,1000000), False)
         if i % 60 == 0: print("write {}".format(i))
     db.commit()
 
