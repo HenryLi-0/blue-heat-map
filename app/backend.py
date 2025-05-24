@@ -11,8 +11,17 @@ class Backend:
     def __init__(self):
         pass
 
+
 class Debug:
+    init = False
+    debug = None
+    @staticmethod
+    def get():
+        if not(Debug.init):
+            Debug.debug = Debug()
+        return Debug.debug
     def __init__(self):
+        self.init = True
         self.initTime = round(time.time())
         self.path = os.path.join("app", "storage", "debug-{}.txt".format(round(time.time())))
         with open(self.path, "w") as f:
@@ -28,6 +37,28 @@ class Debug:
         with open(self.path, "a") as f:
             f.write(data)
             f.close()
+
+class Network:
+    response = ""
+    status = 0
+    data = {}
+    timestamp = 0
+    @staticmethod
+    def tick():
+        try:
+            Network.response = requests.get(PLAYERS_JSON)
+            Network.status = Network.response.status_code
+            Network.data = Network.response.json()
+            Network.timestamp = time.time()
+        except Exception as e:
+            Network.data = {}
+            Debug.get().log("Network", True, "get {}".format(e))
+    @staticmethod
+    def getUUID(uuid):
+        for playerdata in Network.data["players"]:
+            if playerdata["uuid"] == uuid:
+                return playerdata
+        return None
 
 class SessionWriter:
     def __init__(self, uuid:str, debug:Debug):
