@@ -73,6 +73,7 @@ class SessionWriter:
                 f
             ))
             self.lastCommit += 1
+            self.debug.log("SessionWriter_" + self.uuid[0:6], False, "commit {}".format(self.lastCommit))
         except Exception as e:
             self.debug.log("SessionWriter_" + self.uuid[0:6], True, "log {}".format(e))
         if self.lastCommit >=  LOGS_UNTIL_COMMIT:
@@ -96,7 +97,7 @@ class SessionWriter:
                 attempts += 1
         return success
 
-class Logging:
+class BackendLog:
     def __init__(self):
         self.debug = Debug.get()
         Network.tick()
