@@ -2,7 +2,7 @@ from flask import Flask, render_template
 from threading import Thread
 from settings import *
 import requests
-from backend import *
+from app.logging import *
 
 '''MINECRAFT PROCESSING STUFF'''
 if BACKEND:

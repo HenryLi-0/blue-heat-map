@@ -1,42 +1,9 @@
 from settings import *
-import requests, os, time, math, sqlite3
+import requests, os, time, sqlite3
+from utils import *
 
 INT_LIMIT = (2**31)-1
 SMALLINT_LIMIT = (2**15)-1
-
-def clamp(value:int, maxV:int):
-    return max(-maxV, min(value, maxV))
-
-class Backend:
-    def __init__(self):
-        pass
-
-
-class Debug:
-    init = False
-    debug = None
-    @staticmethod
-    def get():
-        if not(Debug.init):
-            Debug.debug = Debug()
-        return Debug.debug
-    def __init__(self):
-        self.init = True
-        self.initTime = round(time.time())
-        self.path = os.path.join("app", "storage", "debug-{}.txt".format(round(time.time())))
-        with open(self.path, "w") as f:
-            f.write("")
-            f.close()
-    def log(self, name, error, text):
-        data = "{:8} | {} | {:20} | {}".format(
-            round((time.time() - self.initTime())*1000)/1000,
-            "X" if error else " ",
-            name,
-            text
-        )
-        with open(self.path, "a") as f:
-            f.write(data)
-            f.close()
 
 class Network:
     response = ""
@@ -54,6 +21,12 @@ class Network:
             Network.data = {}
             Debug.get().log("Network", True, "get {}".format(e))
     @staticmethod
+    def getAllUUID():
+        uuids = []
+        for playerdata in Network.data["players"]:
+            uuids.append(playerdata["uuid"])
+        return uuids
+    @staticmethod
     def getUUID(uuid):
         for playerdata in Network.data["players"]:
             if playerdata["uuid"] == uuid:
@@ -61,10 +34,10 @@ class Network:
         return None
 
 class SessionWriter:
-    def __init__(self, uuid:str, debug:Debug):
+    def __init__(self, uuid:str):
         self.initTime = round(time.time())
         self.uuid = str(uuid)
-        self.debug = debug
+        self.debug = Debug.get()
         self.lastCommit = 0
 
         os.makedirs(os.path.join("app", "storage", self.uuid), exist_ok=True)
@@ -94,9 +67,9 @@ class SessionWriter:
             INSERT INTO player_activity (timestamp, x, y, z, f)
             VALUES (?, ?, ?, ?, ?)
             ''', (clamp(round(timestamp-self.initTime), SMALLINT_LIMIT),
-                clamp(x, INT_LIMIT),
-                clamp(y, SMALLINT_LIMIT),
-                clamp(z, INT_LIMIT),
+                clamp(roundf(x, 1), INT_LIMIT),
+                clamp(roundf(y, 1), SMALLINT_LIMIT),
+                clamp(roundf(z, 1), INT_LIMIT),
                 f
             ))
             self.lastCommit += 1
@@ -115,10 +88,43 @@ class SessionWriter:
         while not(success) and attempts <= MAX_SAVE_ATTEMPTS:
             try:
                 self.db.commit()
+                self.db.close()
                 success = True
             except Exception as e:
                 self.debug.log("SessionWriter_" + self.uuid[0:6], True, "close {}".format(e))
                 time.sleep(0.1)
                 attempts += 1
         return success
-        
+
+class Logging:
+    def __init__(self):
+        self.debug = Debug.get()
+        Network.tick()
+        self.writers:dict[str,SessionWriter] = {}
+        for uuid in Network.getAllUUID():
+            self.writers[uuid] = SessionWriter(uuid)
+        self.tick()
+        self.debug.log("Backend", False, "init success")
+    
+    def tick(self):
+        Network.tick()
+        # update for active writers
+        current = list(self.writers.keys())
+        actual = Network.getAllUUID()
+        for uuid in actual:
+            if not(uuid in current):
+                self.writers[uuid] = SessionWriter(uuid)
+        for uuid in current:
+            if not(uuid in actual):
+                if self.writers[uuid].close():
+                    self.writers.pop(uuid)
+        # tick all writers
+        for uuid in actual:
+            data = Network.getUUID(uuid)
+            self.writers[uuid].data(
+                Network.timestamp,
+                data["position"]["x"],
+                data["position"]["y"],
+                data["position"]["z"],
+                data["foreign"]
+            )
