@@ -60,8 +60,11 @@
 # lastUpdate = 0
 # while True:
 #     if time.time()-lastUpdate > 1:
-#         backend.tick()
 #         lastUpdate = time.time()
+#         start = time.time()
+#         backend.tick()
+#         end = time.time()
+#         print("time taken {}s".format(end-start))
 
 
 
@@ -78,32 +81,43 @@
 
 import os
 from backendRead import Datalog
-reader = Datalog(os.path.join("app", "storage", "uuid","log"))
-data = reader.read()
-
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import colorsys
 
-rgbDecToHex = lambda rgb: "#" + "".join(["{:02}".format(hex(round(item*255))[2:]).replace(" ", "0") for item in rgb])
-
-xs = [p[1] for p in data]
-ys = [p[2] for p in data]
-zs = [p[3] for p in data]
-colors = [rgbDecToHex(colorsys.hsv_to_rgb(i/len(data), 1, 1)) for i in range(len(data))]
+logs = [("uuid", "start",   "red"),
+        ("uuid", "start", "green"),
+        ("uuid", "start",  "blue")]
+startTime = 0
+endTime = 0 + 100
+deltaTime = endTime - startTime
 
 plot = plt.figure()
-ax = plot.add_subplot(111, projection='3d')
+subplot = plot.add_subplot(111, projection='3d')
 
-# y and z swapped for mc
-# s for point size?
-ax.scatter(xs, zs, ys, c=colors, s=60)
-ax.plot(xs, zs, ys, c="black")
+rgbDecToHex = lambda rgb: "#" + "".join(["{:02}".format(hex(round(max(0, min(item*255, 255))))[2:]).replace(" ", "0") for item in rgb])
+
+for i, data in enumerate(logs):
+    
+    reader = Datalog(os.path.join("app", "storage", data[0], str(data[1])+".db"))
+    fullLogData = reader.read()
+
+
+    xs = [p[1] for p in fullLogData]
+    ys = [p[2] for p in fullLogData]
+    zs = [p[3] for p in fullLogData]
+
+    colors = [rgbDecToHex(colorsys.hsv_to_rgb(((data[1]+logData[0])-startTime)/deltaTime, 1, 1)) for logData in fullLogData]
+
+
+    # y and z swapped for mc
+    # s for point size?
+    subplot.scatter(xs, zs, ys, c=colors, s=60)
+    subplot.plot(xs, zs, ys, c=data[2])
 
 #labels
-ax.set_xlabel('X')
-ax.set_ylabel('Z')
-ax.set_zlabel('Y')
-ax.set_title('3D Point Visualization')
+subplot.set_xlabel('X')
+subplot.set_ylabel('Z')
+subplot.set_zlabel('Y')
+subplot.set_title('3D Point Visualization')
 
 plt.show()
